@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Table</title>
+  </head>
+  <body>
+    <h2>Create Table</h2>
+    <form id="createForm">
+      <label for="table_name">Table Name:</label>
+      <input type="text" id="table_name" name="table_name" required />
+      <br />
+
+      <div id="fields-container">
+        <div>
+          <input
+            type="text"
+            class="field-name"
+            name="field_names[]"
+            required
+            placeholder="Field Name"
+          />
+          <select class="field-type" name="field_types[]" required>
+            <option value="string">String</option>
+            <option value="integer">Integer</option>
+            <option value="text">Text</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" onclick="addAnotherField()">
+        Add Another Field
+      </button>
+      <br />
+
+      <input type="button" value="Create Table" onclick="createTable()" />
+    </form>
+
+    <div id="table-info" style="display: none">
+      <h3 id="table-name-display"></h3>
+      <div id="fields-inputs"></div>
+      <button type="button" onclick="insertData()">Insert Data</button>
+      <button type="button" onclick="deleteTable()">Delete Table</button>
+    </div>
+
+    <h2>Tables</h2>
+    <ul id="table-list"></ul>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      function addAnotherField() {
+        const fieldsContainer = document.getElementById("fields-container");
+        const newFieldDiv = document.createElement("div");
+        newFieldDiv.innerHTML = `
+                <div>
+                    <input type="text" class="field-name" name="field_names[]" required placeholder="Field Name">
+                    <select class="field-type" name="field_types[]" required>
+                        <option value="string">String</option>
+                        <option value="integer">Integer</option>
+                        <option value="text">Text</option>
+                    </select>
+                </div>
+            `;
+        fieldsContainer.appendChild(newFieldDiv);
+      }
+
+      function createTable() {
+        const form = document.getElementById("createForm");
+        const formData = new FormData(form);
+
+        axios
+          .post("/create_table", formData)
+          .then((response) => {
+            console.log(response.data);
+
+            // Show table information
+            const tableInfo = document.getElementById("table-info");
+            const tableNameDisplay =
+              document.getElementById("table-name-display");
+            const fieldsInputs = document.getElementById("fields-inputs");
+
+            tableNameDisplay.textContent = `Table Name: ${formData.get(
+              "table_name"
+            )}`;
+
+            // Create input fields for each field in the table
+            fieldsInputs.innerHTML = formData
+              .getAll("field_names[]")
+              .map(
+                (fieldName) => `
+                        <div>
+                            <label for="${fieldName}">${fieldName}:</label>
+                            <input type="text" id="${fieldName}" name="${fieldName}" required>
+                        </div>
+                    `
+              )
+              .join("");
+
+            tableInfo.style.display = "block";
+          })
+          .catch((error) => {
+            console.error("Error creating table and fields:", error);
+          });
+      }
+
+      function insertData() {
+        const tableName = document
+          .getElementById("table-name-display")
+          .textContent.split(": ")[1];
+        const form = document.getElementById("fields-inputs");
+        const formData = new FormData(form);
+
+        axios
+          .post(`/insert_data/${tableName}`, formData)
+          .then((response) => {
+            console.log(response.data);
+          })
+          .catch((error) => {
+            console.error("Error inserting data:", error);
+          });
+      }
+
+      function deleteTable() {
+        const tableName = document
+          .getElementById("table-name-display")
+          .textContent.split(": ")[1];
+        axios
+          .post(`/delete_table/${tableName}`)
+          .then((response) => {
+            console.log(response.data);
+            window.location.href = "/tables";
+          })
+          .catch((error) => {
+            console.error("Error deleting table:", error);
+          });
+      }
+
+      app.get("/tables", async (req, res) => {
+        try {
+          const tables = await sequelize.query("SHOW TABLES", {
+            type: sequelize.QueryTypes.SHOWTABLES,
+          });
+          const tableNames = tables[0].map(
+            (table) => table.Tables_in_your_database_name
+          ); // Replace with your actual database name
+
+          res.json({ tableNames });
+        } catch (error) {
+          console.error("Error fetching tables:", error);
+          res.status(500).json({ error: "Error fetching tables" });
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tables</title>
+</head>
+<body>
+    <h2>Tables</h2>
+    <ul id="table-list"></ul>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        axios.get('/tables')
+            .then(response => {
+                const tableList = document.getElementById('table-list');
+                response.data.tableNames.forEach(tableName => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = tableName;
+                    listItem.addEventListener('click', () => {
+                        window.location.href = `/table/${tableName}`;
+                    });
+                    tableList.appendChild(listItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching tables:', error);
+            });
+    </script>
+</body>
+</html>
